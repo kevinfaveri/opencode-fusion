@@ -1,6 +1,6 @@
 {
   "name": "opencode-fusion",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Multi-model ensemble tool for OpenCode. Fans out prompts to a panel of LLMs in parallel, collects responses, runs a judge model for structured analysis.",
   "main": "index.ts",
   "files": [
@@ -22,6 +22,9 @@
   },
   "author": "kevinfaveri",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "peerDependencies": {
     "@opencode-ai/plugin": ">=1.14.0"
   }
