@@ -1,5 +1,27 @@
 # opencode-fusion: configuration guide for LLM agents
 
+## How it works
+
+opencode-fusion sends one prompt to a panel of models in parallel, has a judge model compare their answers, and returns structured analysis (consensus, contradictions, unique insights, blind spots) that the calling model uses to write the final answer.
+
+Based on OpenRouter Fusion. Their DRACO benchmark found panels beating single models: Fable 5 + GPT-5.5 (judged by Opus 4.8) scored 69.0%, higher than any single model; a budget panel of Gemini Flash + Kimi + DeepSeek scored 64.7%, beating solo GPT-5.5 (60.0%) and solo Opus 4.8 (58.8%) at about half the cost.
+
+Flow:
+
+    Your prompt
+        |
+        v
+    Primary model (your active chat model)
+        |  decides to call the fusion tool
+        v
+    Panel models in parallel: each answers independently with read and web tools
+        |
+        v
+    Judge model: compares answers into consensus / contradictions / unique insights / blind spots
+        |
+        v
+    Primary model writes the final answer
+
 This file explains how to install and configure the opencode-fusion plugin. Read this when a user asks you to set up or configure fusion in their OpenCode instance.
 
 ## What this plugin does
