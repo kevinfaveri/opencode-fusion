@@ -1,0 +1,28 @@
+{
+  "name": "opencode-fusion",
+  "version": "0.1.0",
+  "description": "Multi-model ensemble tool for OpenCode. Fans out prompts to a panel of LLMs in parallel, collects responses, runs a judge model for structured analysis.",
+  "main": "index.ts",
+  "files": [
+    "index.ts",
+    "README.md",
+    "llms.md"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "llm",
+    "fusion",
+    "ensemble",
+    "multi-model"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevinfaveri/opencode-fusion.git"
+  },
+  "author": "kevinfaveri",
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.14.0"
+  }
+}
