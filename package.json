@@ -1,6 +1,6 @@
 {
   "name": "opencode-fusion",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "Multi-model ensemble tool for OpenCode. Fans out prompts to a panel of LLMs in parallel, collects responses, runs a judge model for structured analysis.",
   "main": "./index.ts",

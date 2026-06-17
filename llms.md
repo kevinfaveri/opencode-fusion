@@ -30,7 +30,7 @@ Registers a `fusion` tool that the active model can call. The "active model" (or
 
 The fusion config only controls the panel models and the judge model. The primary model is always the user's current chat model.
 
-Fusion is for research and analysis. By default panel models get read-only tools (`read`, `grep`, `glob`, `list`, `webfetch`) so they can ground their answers in the actual repo and the web. This is configurable via `panelTools` in the config. The judge gets `webfetch` only by default, matching OpenRouter Fusion where the judge can fetch the web to verify claims but does not get repo-reading tools. The full read toolset is reserved for the panel models. To add real web search (Exa), include `websearch` in `panelTools`/`judgeTools` AND launch OpenCode with `OPENCODE_ENABLE_EXA=1`; it is left out of defaults so the plugin works without extra setup. This is configurable via `judgeTools`. Both panel and judge runs are bounded by `panelMaxSteps` and `judgeMaxSteps` (default 8 each, matching OpenRouter's max_tool_calls); the plugin registers hidden `fusion-panel` and `fusion-judge` subagents at load time so the tool-calling loop always terminates. No end-user config edits are required. Tool names are OpenCode built-in tool names. For research-only use, keep panels on read-only tools and avoid `write`, `edit`, and `bash`.
+Fusion is for research and analysis. By default panel models get read-only tools (`read`, `grep`, `glob`, `list`, `webfetch`) so they can ground their answers in the actual repo and the web. This is configurable via `panelTools` in the config. The judge gets `webfetch` only by default, matching OpenRouter Fusion where the judge can fetch the web to verify claims but does not get repo-reading tools. The full read toolset is reserved for the panel models. To add real web search (Exa), include `websearch` in `panelTools`/`judgeTools` AND launch OpenCode with `OPENCODE_ENABLE_EXA=1`; it is left out of defaults so the plugin works without extra setup. This is configurable via `judgeTools`. Both panel and judge runs are bounded by `panelMaxSteps` and `judgeMaxSteps` (default 16 panel, 12 judge); the plugin registers hidden `fusion-panel` and `fusion-judge` subagents at load time so the tool-calling loop always terminates. No end-user config edits are required. Tool names are OpenCode built-in tool names. For research-only use, keep panels on read-only tools and avoid `write`, `edit`, and `bash`.
 
 ## Install
 
@@ -58,12 +58,37 @@ The plugin works out of the box with these three providers. The user needs API k
 
 | Role | Provider | Model ID | What to run |
 |------|----------|----------|-------------|
-| Panel model 1 | `anthropic` | `claude-sonnet-4-6` | `/connect` > Anthropic |
+| Panel model 1 | `anthropic` | `claude-opus-4-8` | `/connect` > Anthropic |
 | Panel model 2 | `openai` | `gpt-5.5` | `/connect` > OpenAI |
 | Panel model 3 | `deepseek` | `deepseek-chat` | `/connect` > DeepSeek |
-| Judge | `anthropic` | `claude-sonnet-4-6` | (same as panel 1) |
+| Judge | `anthropic` | `claude-opus-4-8` | (same as panel 1) |
 
 All three are built-in OpenCode providers. No custom provider config needed.
+
+Full default configuration:
+
+```json
+{
+  "judge": {
+    "providerID": "anthropic",
+    "modelID": "claude-opus-4-8"
+  },
+  "panel": [
+    { "providerID": "anthropic", "modelID": "claude-opus-4-8", "label": "Claude Opus 4.8" },
+    { "providerID": "openai", "modelID": "gpt-5.5", "label": "GPT-5.5" },
+    { "providerID": "deepseek", "modelID": "deepseek-chat", "label": "DeepSeek" }
+  ],
+  "panelTools": ["read", "grep", "glob", "list", "webfetch"],
+  "judgeTools": ["webfetch"],
+  "panelMaxSteps": 16,
+  "judgeMaxSteps": 12,
+  "panelTimeoutMs": 600000,
+  "judgeTimeoutMs": 600000,
+  "maxTokensPerPanel": 4096,
+  "judgeMaxTokens": 8192,
+  "temperature": 0.7
+}
+```
 
 ## Custom configuration
 
@@ -164,7 +189,7 @@ For Ollama, the user must first configure it as a custom provider in their `open
 | Field | Default | Description |
 |-------|---------|-------------|
 | `judge.providerID` | `anthropic` | Provider for the judge model |
-| `judge.modelID` | `claude-sonnet-4-6` | Model that produces the structured analysis |
+| `judge.modelID` | `claude-opus-4-8` | Model that produces the structured analysis |
 | `panel[].providerID` | varies | Provider for each panel model |
 | `panel[].modelID` | varies | Model ID for each panel model |
 | `panel[].label` | auto-generated | Display name shown in the analysis output |
@@ -174,9 +199,9 @@ For Ollama, the user must first configure it as a custom provider in their `open
 | `judgeMaxSteps` | `12` | Max agentic tool-calling iterations the judge may take before returning |
 | `panelTimeoutMs` | `600000` | Milliseconds before a panel model is timed out, its session aborted, and it is marked failed (prevents one hung model from blocking the run) |
 | `judgeTimeoutMs` | `600000` | Milliseconds before the judge is timed out and the run falls back to returning panel responses without analysis |
-| `maxTokensPerPanel` | `4096` | Max output tokens per panel model response |
-| `judgeMaxTokens` | `8192` | Max output tokens for the judge analysis |
-| `temperature` | `0.7` | Sampling temperature for panel and judge calls |
+| `maxTokensPerPanel` | `4096` | Max output tokens per panel model response (applied via chat.params hook) |
+| `judgeMaxTokens` | `8192` | Max output tokens for the judge analysis (applied via chat.params hook) |
+| `temperature` | `0.7` | Sampling temperature for panel and judge calls (applied via chat.params hook) |
 
 ## Troubleshooting
 

@@ -52,10 +52,10 @@ interface FusionResult {
 const DEFAULT_CONFIG: FusionConfig = {
   judge: {
     providerID: "anthropic",
-    modelID: "claude-sonnet-4-6",
+    modelID: "claude-opus-4-8",
   },
   panel: [
-    { providerID: "anthropic", modelID: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+    { providerID: "anthropic", modelID: "claude-opus-4-8", label: "Claude Opus 4.8" },
     { providerID: "openai", modelID: "gpt-5.5", label: "GPT-5.5" },
     { providerID: "deepseek", modelID: "deepseek-chat", label: "DeepSeek" },
   ],
@@ -136,53 +136,6 @@ Before you answer, you MUST gather real evidence using these tools. Do not answe
 - If it depends on current or external facts such as library versions, APIs, recent changes, or best practices, search the web and fetch authoritative sources.
 
 Make at least one tool call to ground your analysis before concluding. Research independently and reach your own conclusion. Ground every significant claim in a file you read or a source you found. Then answer thoroughly with specific details, concrete trade-offs, and clear reasoning. Be direct and substantive.`
-
-const ANALYSIS_SCHEMA = {
-  type: "object" as const,
-  properties: {
-    consensus: {
-      type: "array" as const,
-      items: { type: "string" as const },
-    },
-    contradictions: {
-      type: "array" as const,
-      items: {
-        type: "object" as const,
-        properties: {
-          topic: { type: "string" as const },
-          stances: {
-            type: "array" as const,
-            items: {
-              type: "object" as const,
-              properties: {
-                model: { type: "string" as const },
-                stance: { type: "string" as const },
-              },
-              required: ["model", "stance"],
-            },
-          },
-        },
-        required: ["topic", "stances"],
-      },
-    },
-    unique_insights: {
-      type: "array" as const,
-      items: {
-        type: "object" as const,
-        properties: {
-          model: { type: "string" as const },
-          insight: { type: "string" as const },
-        },
-        required: ["model", "insight"],
-      },
-    },
-    blind_spots: {
-      type: "array" as const,
-      items: { type: "string" as const },
-    },
-  },
-  required: ["consensus", "contradictions", "unique_insights", "blind_spots"],
-}
 
 async function runPanel(
   client: any,
@@ -382,7 +335,7 @@ async function runJudge(
   }
 }
 
-let fusionInFlight = false
+const fusionInFlight = new Set<string>()
 
 export const OpenCodeFusion: Plugin = async ({ client }) => {
   const fusionConfig = loadConfig()
@@ -402,6 +355,17 @@ export const OpenCodeFusion: Plugin = async ({ client }) => {
         description: "Bounded fusion judge run that produces structured analysis",
       }
     },
+    "chat.params": async (input: any, output: any) => {
+      if (input.agent === "fusion-panel") {
+        const cfg = loadConfig()
+        output.temperature = cfg.temperature
+        output.maxOutputTokens = cfg.maxTokensPerPanel
+      } else if (input.agent === "fusion-judge") {
+        const cfg = loadConfig()
+        output.temperature = cfg.temperature
+        output.maxOutputTokens = cfg.judgeMaxTokens
+      }
+    },
     tool: {
       fusion: tool({
         description:
@@ -413,8 +377,8 @@ export const OpenCodeFusion: Plugin = async ({ client }) => {
               "The question or task to send to the panel of expert models for multi-perspective analysis",
             ),
         },
-        async execute(args) {
-          if (fusionInFlight) {
+        async execute(args, context) {
+          if (fusionInFlight.has(context.sessionID)) {
             await client.app
               .log({ body: { service: "fusion", level: "info", message: "fusion:capped (already in flight)" } })
               .catch(() => {})
@@ -428,7 +392,7 @@ export const OpenCodeFusion: Plugin = async ({ client }) => {
               2,
             )
           }
-          fusionInFlight = true
+          fusionInFlight.add(context.sessionID)
           const config = loadConfig()
           const log = (message: string, extra?: any) =>
             client.app.log({ body: { service: "fusion", level: "info", message, extra } }).catch(() => {})
@@ -557,7 +521,7 @@ export const OpenCodeFusion: Plugin = async ({ client }) => {
           return resultJson
 
           } finally {
-            fusionInFlight = false
+            fusionInFlight.delete(context.sessionID)
             activeIntervals.forEach((id) => clearInterval(id))
             toastQueue.length = 0
           }
